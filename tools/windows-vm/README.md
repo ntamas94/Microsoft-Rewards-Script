@@ -56,6 +56,29 @@ node index.mjs --status
 `Edge browsing time: 0/30 min` means everything is wired up. Run `node index.mjs` once to watch it climb - on
 Windows the counter moves in ~5 minute blocks, so give it 15-20 minutes before judging.
 
+## Driving the VM from the Docker host
+
+`docker exec` only reaches the container's Linux side, where QEMU runs - not into Windows. Instead the container
+publishes port 2222, which dockurr forwards to the VM's own OpenSSH server (enabled by `oem/install.bat`):
+
+```bash
+ssh -p 2222 rewards@127.0.0.1 "cd C:\edge-browse-minutes && node index.mjs --status"
+```
+
+Run the whole session the same way, or from a host cron job if you would rather schedule it outside the VM:
+
+```bash
+ssh -p 2222 rewards@127.0.0.1 "cd C:\edge-browse-minutes && node index.mjs"
+```
+
+To avoid typing the VM password every time, install a key once - from the VM console, with your host's public key:
+
+```
+powershell -Command "Add-Content $env:USERPROFILE\.ssh\authorized_keys 'ssh-ed25519 AAAA... user@host'"
+```
+
+The port is bound to `127.0.0.1`, so this works from the server itself; tunnel if you want it from elsewhere.
+
 ## Notes
 
 - The scheduled task runs at 03:00 daily. The VM must be running at that time; `restart: unless-stopped` handles

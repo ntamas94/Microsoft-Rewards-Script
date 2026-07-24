@@ -27,6 +27,11 @@ echo [oem] installing dependencies
 cd /d "%TOOL%"
 call npm install --omit=dev --no-audit --no-fund
 
+echo [oem] enabling OpenSSH so the VM can be driven from the Docker host
+powershell -NoProfile -Command "Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0"
+powershell -NoProfile -Command "Set-Service -Name sshd -StartupType Automatic; Start-Service sshd"
+netsh advfirewall firewall add rule name="OpenSSH-Server-In-TCP" dir=in action=allow protocol=TCP localport=22
+
 echo [oem] registering the daily task
 schtasks /create /tn "EdgeBrowseMinutes" /tr "cmd /c cd /d %TOOL% && node index.mjs" /sc daily /st 03:00 /rl highest /f
 

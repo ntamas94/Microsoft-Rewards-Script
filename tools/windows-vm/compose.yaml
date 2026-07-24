@@ -42,6 +42,9 @@ services:
             - '${VIEWER_BIND:-127.0.0.1}:8006:8006'
             - '${VIEWER_BIND:-127.0.0.1}:3389:3389/tcp'
             - '${VIEWER_BIND:-127.0.0.1}:3389:3389/udp'
+            # Published ports are forwarded into the guest, so this reaches the VM's own
+            # OpenSSH server: run the tool from the host without touching the console.
+            - '127.0.0.1:2222:22'
 
         volumes:
             - ${WINDOWS_STORAGE_DIR:-/mnt/hdd/windows-edge/storage}:/storage
