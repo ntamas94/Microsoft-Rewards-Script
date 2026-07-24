@@ -3,6 +3,8 @@ services:
         build: .
         image: edge-browse-minutes
         container_name: edge-browse-minutes
+        # Stable hostname: Chromium records it in the profile's SingletonLock
+        hostname: edge-browse-minutes
         # Edge crashes with the default 64MB of shared memory
         shm_size: 1gb
         environment:

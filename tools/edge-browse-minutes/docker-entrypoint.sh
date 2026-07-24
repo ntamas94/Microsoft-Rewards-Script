@@ -52,6 +52,28 @@ if [ "${ENABLE_VNC}" = "1" ]; then
     echo "entrypoint: noVNC on http://<host>:${NOVNC_PORT}/vnc.html (no password - keep it off the internet)"
 fi
 
+# Chromium stores "hostname-pid" in SingletonLock. Every container run gets a fresh
+# hostname, so a lock left behind by an unclean stop makes Edge refuse to start with
+# "in use by another Microsoft Edge process on another computer". Exactly one container
+# owns this profile at a time, so a leftover lock is always stale.
+clear_stale_locks() {
+    local profile_dir="${EDGE_USER_DATA_DIR:-/profile}"
+
+    if pgrep -x msedge >/dev/null 2>&1; then
+        echo "entrypoint: Edge is already running in this container, leaving the profile lock alone"
+        return
+    fi
+
+    for lock in SingletonLock SingletonSocket SingletonCookie; do
+        if [ -e "${profile_dir}/${lock}" ] || [ -L "${profile_dir}/${lock}" ]; then
+            rm -f "${profile_dir}/${lock}"
+            echo "entrypoint: removed stale ${lock}"
+        fi
+    done
+}
+
+clear_stale_locks
+
 case "${1:-run}" in
     signin)
         profile_dir="${EDGE_USER_DATA_DIR:-/profile}"
