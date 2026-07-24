@@ -97,9 +97,14 @@ async function waitForSignIn(page, attempts) {
 }
 
 function reportCounter(result) {
+    // Not every partner has an x/y counter - visualsearch for one only tracks its streak day
     const others = Object.entries(result.partners)
-        .filter(([name, p]) => name !== 'edge' && p.progress !== null && p.max !== null)
-        .map(([name, p]) => `${name} ${p.progress}/${p.max}`)
+        .filter(([name]) => name !== 'edge')
+        .map(([name, p]) => {
+            if (p.progress !== null && p.max !== null) return `${name} ${p.progress}/${p.max}`
+            if (p.currentStep !== null) return `${name} day ${p.currentStep}/${p.totalSteps ?? '?'}`
+            return `${name} ${p.completed ? 'done' : 'open'}`
+        })
         .join(' | ')
 
     if (!result.counter) {
