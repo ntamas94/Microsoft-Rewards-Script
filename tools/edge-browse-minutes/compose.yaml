@@ -7,9 +7,14 @@ services:
         shm_size: 1gb
         environment:
             - EDGE_USER_DATA_DIR=/profile
+            # Focuses the Edge window on the container's own Xvfb display only - it can never
+            # touch the host desktop or your shell, so leave it on: Edge credits active time.
             - EDGE_KEEP_FOREGROUND=true
             - EDGE_SESSION_TIMEOUT_MINUTES=75
             - LOOP_HOURS=24
+            # VNC is only needed for the one-off sign-in. Set to 0 afterwards so no VNC
+            # server runs at all during normal, unattended runs.
+            - ENABLE_VNC=${ENABLE_VNC:-1}
         volumes:
             # Bind mount so the Edge profile lives on the big disk, not in /var/lib/docker.
             # Override EDGE_PROFILE_DIR in .env (see .env.example).

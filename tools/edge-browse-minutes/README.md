@@ -90,8 +90,14 @@ Environment overrides, so no config.json has to be mounted: `EDGE_USER_DATA_DIR`
 ## Things to know
 
 - **Focus matters.** Edge only counts *active* browsing, so the tool brings the Edge window to the foreground every
-  20 seconds and blocks sleep. Run it while you are away from the machine. To turn it off, set `keepForeground: false`
-  in `config.json` or pass `--no-foreground`.
+  20 seconds and blocks sleep. To turn it off, set `keepForeground: false` in `config.json` or pass
+  `--no-foreground`.
+  - On **Windows** this steals focus from whatever you are doing, so run it while you are away from the machine.
+  - In **Docker** it does not: the window lives on the container's private Xvfb display, so nothing is ever
+    focused on the host. The server stays fully usable and the container needs no attached terminal
+    (`docker compose up -d`). Leave the keeper enabled there.
+- **VNC is only for the sign-in.** After the profile is signed in, set `ENABLE_VNC=0` so unattended runs start no
+  VNC server at all.
 - **Tracking prevention.** If the profile is on Strict, Rewards may not detect the browsing at all. Keep it on
   Balanced (`edge://settings/privacy`).
 - **No guarantees.** Microsoft measures the minutes server-side. The tool uses a real Edge, but what the telemetry
