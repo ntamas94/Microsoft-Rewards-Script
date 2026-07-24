@@ -54,19 +54,44 @@ fi
 
 case "${1:-run}" in
     signin)
+        profile_dir="${EDGE_USER_DATA_DIR:-/profile}"
+        mkdir -p "${profile_dir}"
+
+        # Chromium needs a filesystem with symlinks and file locking. A bind mount from an
+        # ntfs/exfat/network disk silently fails to start, which looks like a black VNC screen.
+        echo "entrypoint: profile ${profile_dir} on $(stat -f -c %T "${profile_dir}" 2>/dev/null || echo unknown) filesystem"
+        if ! ln -sf . "${profile_dir}/.symlink-test" 2>/dev/null; then
+            echo "entrypoint: WARNING - cannot create symlinks in ${profile_dir}; Edge will not start there." >&2
+            echo "entrypoint: use a directory on a Linux filesystem (ext4/xfs/btrfs) instead." >&2
+        fi
+        rm -f "${profile_dir}/.symlink-test"
+
         echo "entrypoint: starting Edge for the one-off sign-in"
         microsoft-edge-stable \
             --no-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
             --password-store=basic \
-            --user-data-dir="${EDGE_USER_DATA_DIR:-/profile}" \
+            --user-data-dir="${profile_dir}" \
             --no-first-run \
             --no-default-browser-check \
             --window-size=1920,1080 \
-            "https://rewards.bing.com/" 2>/dev/null &
+            "https://rewards.bing.com/" &
+        edge_pid=$!
+
+        sleep 8
+        if ! kill -0 "${edge_pid}" 2>/dev/null; then
+            echo "entrypoint: Edge exited immediately - see its output above" >&2
+            exit 1
+        fi
+        if [ -z "$(xdotool search --onlyvisible --class 'microsoft-edge' 2>/dev/null | head -n1)" ]; then
+            echo "entrypoint: Edge is running but has mapped no window on ${DISPLAY}" >&2
+        else
+            echo "entrypoint: Edge window is up on ${DISPLAY}"
+        fi
+
         echo "entrypoint: open noVNC, sign in to Edge itself, then stop this container"
-        wait
+        wait "${edge_pid}"
         ;;
     status)
         exec node /app/index.mjs --status
