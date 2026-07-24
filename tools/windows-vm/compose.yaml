@@ -36,11 +36,12 @@ services:
             - NET_ADMIN
 
         ports:
-            # Web viewer for the install and the one-off Edge sign-in. Keep it off the
-            # public internet - reach it over an SSH tunnel if the server is remote.
-            - '127.0.0.1:8006:8006'
-            - '127.0.0.1:3389:3389/tcp'
-            - '127.0.0.1:3389:3389/udp'
+            # Web viewer for the install and the one-off Edge sign-in. It has NO authentication:
+            # whoever reaches it controls a Windows desktop signed into your Microsoft account.
+            # Defaults to localhost only; set VIEWER_BIND=0.0.0.0 in .env to reach it from the LAN.
+            - '${VIEWER_BIND:-127.0.0.1}:8006:8006'
+            - '${VIEWER_BIND:-127.0.0.1}:3389:3389/tcp'
+            - '${VIEWER_BIND:-127.0.0.1}:3389:3389/udp'
 
         volumes:
             - ${WINDOWS_STORAGE_DIR:-/mnt/hdd/windows-edge/storage}:/storage
