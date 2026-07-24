@@ -1,0 +1,69 @@
+{
+    "// userDataDir": "Dedicated Edge profile for this tool. Sign in to Edge ITSELF here, once, by hand.",
+    "userDataDir": "./edge-profile",
+
+    "// edgePath": "Leave null to auto-detect msedge.exe.",
+    "edgePath": null,
+
+    "// targetMinutes": "The daily goal shown on the Rewards card (usually 30).",
+    "targetMinutes": 30,
+
+    "// sessionTimeoutMinutes": "Hard stop, even if the counter never reaches the target.",
+    "sessionTimeoutMinutes": 75,
+
+    "// remoteDebuggingPort": "Port used to drive the real Edge over CDP.",
+    "remoteDebuggingPort": 9222,
+
+    "// keepForeground": "Periodically pull the Edge window to the foreground and block sleep. Edge only counts active browsing time, so this matters - but it steals focus, so run it while you are away.",
+    "keepForeground": true,
+
+    "// closeOnFinish": "Close Edge when the target is reached (or the timeout hits).",
+    "closeOnFinish": true,
+
+    "// pollSeconds": "How often to re-read the Rewards minute counter.",
+    "pollSeconds": 60,
+
+    "// dwell": "How long to stay on one page before moving on, in seconds.",
+    "dwell": {
+        "min": 45,
+        "max": 90
+    },
+
+    "// bingSearchRatio": "Share of page visits that are Bing searches; the rest come from browseUrls.",
+    "bingSearchRatio": 0.5,
+
+    "browseUrls": [
+        "https://www.msn.com/",
+        "https://www.msn.com/en-us/news",
+        "https://www.bing.com/news",
+        "https://www.msn.com/en-us/money",
+        "https://www.bing.com/images/trending",
+        "https://www.msn.com/en-us/sports",
+        "https://www.msn.com/en-us/weather"
+    ],
+
+    "queries": [
+        "weather forecast this week",
+        "best laptops 2026",
+        "how to cook risotto",
+        "premier league table",
+        "electric car range comparison",
+        "budapest events this weekend",
+        "healthy breakfast ideas",
+        "python vs typescript",
+        "cheap flights to rome",
+        "how does solar power work",
+        "new movies streaming",
+        "home workout routine",
+        "coffee brewing methods",
+        "history of the silk road",
+        "best hiking trails europe",
+        "how to fix a leaky faucet",
+        "stock market news today",
+        "space telescope discoveries",
+        "learn guitar for beginners",
+        "recipe slow cooker chicken"
+    ],
+
+    "debug": false
+}
