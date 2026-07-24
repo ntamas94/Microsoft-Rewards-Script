@@ -26,6 +26,13 @@ those directories first, or Docker will create them as root.
 Any other setting can be overridden the same way with the `CONFIG_*` variables listed in the main README - for
 example `CONFIG_WORKER_VISUAL_SEARCH` (already set to `true` in the stack) or `CONFIG_CLUSTERS`.
 
+The stack enables every worker and activity. Two of them ship disabled upstream and are worth a conscious choice:
+`CONFIG_WORKER_VISUAL_SEARCH` (the visual-search streak - no downside) and `CONFIG_WORKER_BONUS_SEARCHES`, which
+farms searches past the daily cap and is the only setting here that does not resemble ordinary use.
+
+If you deploy with the repo-root `compose.yaml` and a `.env` instead of a Portainer stack, the same list is in
+[env.full.example](env.full.example) - append it to your `.env` and recreate the container.
+
 ## 2. edge-browse-minutes (the Edge 30-minute streak)
 
 This one has to be built, so use **Add stack** -> **Repository** instead of the web editor:

@@ -35,9 +35,33 @@ services:
             RUN_ON_START: 'true' # also run once when the stack starts
             SKIP_RANDOM_SLEEP: 'false'
 
-            # -- Workers --
-            # Visual Search is off by default in the shipped config, this turns it on.
+            # -- Workers: everything on --
+            CONFIG_WORKER_DAILY_SET: 'true'
+            CONFIG_WORKER_CLAIM_BONUS_POINTS: 'true'
+            CONFIG_WORKER_MORE_PROMOTIONS: 'true'
+            CONFIG_WORKER_PUNCH_CARDS: 'true'
+            CONFIG_WORKER_APP_PROMOTIONS: 'true'
+            CONFIG_WORKER_DESKTOP_SEARCH: 'true'
+            CONFIG_WORKER_MOBILE_SEARCH: 'true'
+            CONFIG_WORKER_DAILY_CHECKIN: 'true'
+            CONFIG_WORKER_READ_TO_EARN: 'true'
+            CONFIG_WORKER_ACTIVATE_SEARCH_PERK: 'true'
+            # Off by default upstream, and the image ships it off: the visual-search streak
             CONFIG_WORKER_VISUAL_SEARCH: 'true'
+            # Also off by default upstream - farms searches past the daily cap, which is the
+            # one setting here that looks unlike normal use. Set to 'false' to play it safe.
+            CONFIG_WORKER_BONUS_SEARCHES: 'true'
+            CONFIG_SEARCH_MAX_BONUS_SEARCHES: '110'
+
+            # -- Activities --
+            CONFIG_ACTIVITY_URL_REWARD: 'true'
+            CONFIG_ACTIVITY_SEARCH_ON_BING: 'true'
+
+            # -- Behaviour --
+            CONFIG_ENSURE_STREAK_PROTECTION: 'true'
+            CONFIG_AUTO_CLAIM_PUNCHCARD_REWARDS: 'true'
+            CONFIG_SEARCH_SCROLL_RANDOM: 'true'
+            CONFIG_SEARCH_CLICK_RANDOM: 'true'
 
         healthcheck:
             test: ['CMD-SHELL', 'pgrep -x node >/dev/null 2>&1 || pgrep -x cron >/dev/null 2>&1']
