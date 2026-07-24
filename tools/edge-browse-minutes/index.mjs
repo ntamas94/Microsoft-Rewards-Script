@@ -5,7 +5,7 @@ import { promisify } from 'node:util'
 
 import { ROOT, loadConfig } from './src/config.mjs'
 import { browseCycle } from './src/browse.mjs'
-import { connectToEdge, findEdge, launchEdge, pageFor } from './src/edge.mjs'
+import { IS_WINDOWS, connectToEdge, findEdge, launchEdge, pageFor } from './src/edge.mjs'
 import { dumpPayload, readBrowseProgress } from './src/progress.mjs'
 import { formatDuration, log, sleep } from './src/util.mjs'
 
@@ -24,16 +24,24 @@ const flags = {
     noForeground: process.argv.includes('--no-foreground')
 }
 
+/** Only needed when attaching to an Edge this process did not start. */
 async function findEdgePid(userDataDir) {
-    const script = [
-        `Get-CimInstance Win32_Process -Filter "Name='msedge.exe'"`,
-        `Where-Object { $_.CommandLine -like '*${userDataDir}*' }`,
-        `ForEach-Object { $p = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue; if ($p -and $p.MainWindowHandle -ne 0) { $p.Id } }`
-    ].join(' | ')
-
     try {
-        const { stdout } = await execFileAsync('powershell', ['-NoProfile', '-Command', script])
-        const pid = stdout.split(/\r?\n/).map(line => Number(line.trim()))[0]
+        if (IS_WINDOWS) {
+            const script = [
+                `Get-CimInstance Win32_Process -Filter "Name='msedge.exe'"`,
+                `Where-Object { $_.CommandLine -like '*${userDataDir}*' }`,
+                `ForEach-Object { $p = Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue; if ($p -and $p.MainWindowHandle -ne 0) { $p.Id } }`
+            ].join(' | ')
+
+            const { stdout } = await execFileAsync('powershell', ['-NoProfile', '-Command', script])
+            const pid = Number(stdout.split(/\r?\n/)[0]?.trim())
+            return Number.isInteger(pid) && pid > 0 ? pid : null
+        }
+
+        // The browser process is the oldest match; renderers inherit the same flag
+        const { stdout } = await execFileAsync('pgrep', ['-f', `--user-data-dir=${userDataDir}`])
+        const pid = Number(stdout.split('\n')[0]?.trim())
         return Number.isInteger(pid) && pid > 0 ? pid : null
     } catch {
         return null
@@ -43,7 +51,8 @@ async function findEdgePid(userDataDir) {
 async function closeEdge(edgePid) {
     if (!edgePid) return
     try {
-        await execFileAsync('taskkill', ['/PID', String(edgePid), '/T', '/F'])
+        if (IS_WINDOWS) await execFileAsync('taskkill', ['/PID', String(edgePid), '/T', '/F'])
+        else process.kill(edgePid, 'SIGTERM')
         log.info('EDGE', 'Edge closed')
     } catch {
         log.debug('EDGE', 'Edge was already gone')
@@ -51,13 +60,23 @@ async function closeEdge(edgePid) {
 }
 
 function startForegroundKeeper(edgePid) {
-    const script = path.join(ROOT, 'src', 'keep-awake.ps1')
-    const child = spawn(
-        'powershell',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-EdgePid', String(edgePid)],
-        { stdio: 'ignore' }
-    )
-    log.info('FOCUS', `Foreground keeper running for PID ${edgePid} - it will steal focus every 20s`)
+    const child = IS_WINDOWS
+        ? spawn(
+              'powershell',
+              [
+                  '-NoProfile',
+                  '-ExecutionPolicy',
+                  'Bypass',
+                  '-File',
+                  path.join(ROOT, 'src', 'keep-awake.ps1'),
+                  '-EdgePid',
+                  String(edgePid)
+              ],
+              { stdio: 'ignore' }
+          )
+        : spawn('bash', [path.join(ROOT, 'src', 'keep-awake.sh'), String(edgePid)], { stdio: 'ignore' })
+
+    log.info('FOCUS', `Foreground keeper running for PID ${edgePid} - it keeps the Edge window active every 20s`)
     return child
 }
 

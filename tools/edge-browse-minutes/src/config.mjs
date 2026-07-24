@@ -42,5 +42,21 @@ export function loadConfig() {
     config.queries ??= ['news today']
     config.debug ??= false
 
+    return applyEnvOverrides(config)
+}
+
+/** Container-friendly overrides so the image can run without a mounted config.json. */
+function applyEnvOverrides(config) {
+    const { EDGE_USER_DATA_DIR, EDGE_PATH, EDGE_KEEP_FOREGROUND, EDGE_SESSION_TIMEOUT_MINUTES, EDGE_CLOSE_ON_FINISH } =
+        process.env
+
+    if (EDGE_USER_DATA_DIR) config.userDataDir = path.resolve(EDGE_USER_DATA_DIR)
+    if (EDGE_PATH) config.edgePath = EDGE_PATH
+    if (EDGE_KEEP_FOREGROUND) config.keepForeground = EDGE_KEEP_FOREGROUND !== 'false'
+    if (EDGE_CLOSE_ON_FINISH) config.closeOnFinish = EDGE_CLOSE_ON_FINISH !== 'false'
+    if (EDGE_SESSION_TIMEOUT_MINUTES && Number(EDGE_SESSION_TIMEOUT_MINUTES) > 0) {
+        config.sessionTimeoutMinutes = Number(EDGE_SESSION_TIMEOUT_MINUTES)
+    }
+
     return config
 }

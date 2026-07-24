@@ -1,0 +1,21 @@
+services:
+    edge-browse-minutes:
+        build: .
+        image: edge-browse-minutes
+        container_name: edge-browse-minutes
+        # Edge crashes with the default 64MB of shared memory
+        shm_size: 1gb
+        environment:
+            - EDGE_USER_DATA_DIR=/profile
+            - EDGE_KEEP_FOREGROUND=true
+            - EDGE_SESSION_TIMEOUT_MINUTES=75
+            - LOOP_HOURS=24
+        volumes:
+            - edge-profile:/profile
+        ports:
+            # noVNC, only needed for the one-off sign-in - do not expose this publicly
+            - '127.0.0.1:6080:6080'
+        command: ['run']
+
+volumes:
+    edge-profile:

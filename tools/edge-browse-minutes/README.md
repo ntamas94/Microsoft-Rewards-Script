@@ -10,8 +10,8 @@ Edge is started as an ordinary process with `--remote-debugging-port`, and the t
 
 ## Requirements
 
-- Windows with Microsoft Edge installed
-- Node.js 20+
+- Microsoft Edge: Windows, or linux/amd64 through the bundled Docker image
+- Node.js 20+ (not needed when running the container)
 - You must be signed in to **Edge itself** (profile icon, top right), not just to bing.com
 
 ## Install
@@ -46,6 +46,39 @@ Flags:
 | `--status` | Print the current progress and exit, no browsing |
 | `--dump` | Write the raw Rewards JSON to a file (for when counter detection breaks) |
 | `--no-foreground` | Do not pull the Edge window to the foreground |
+
+## Docker (Linux, unverified)
+
+The image installs `microsoft-edge-stable` and runs it on an Xvfb display with fluxbox (a window manager is
+required, otherwise the window can never be activated and the focus keeper does nothing). noVNC is included for the
+one-off sign-in.
+
+**Important:** whether Microsoft credits browsing minutes from *Linux* Edge is not verified. The Rewards browsing
+streak is also a rotating offer that not every account has. Measure it before relying on it: run `status`, let `run`
+work for ~10 minutes, then run `status` again and check whether the counter moved.
+
+Build and sign in once (the profile is kept in the `edge-profile` volume):
+
+```bash
+docker compose build
+docker compose run --rm --service-ports edge-browse-minutes signin
+```
+
+Open `http://localhost:6080/vnc.html`, sign in to Edge with your Microsoft account, then stop the container
+(Ctrl+C). The noVNC port is bound to localhost and has no password - keep it off the public internet, and tunnel
+over SSH (`ssh -L 6080:localhost:6080 user@server`) when the machine is remote.
+
+Then:
+
+```bash
+docker compose run --rm edge-browse-minutes status   # print counters
+docker compose up -d                                 # browse until 30/30
+```
+
+Use `command: ["loop"]` in `compose.yaml` (with `LOOP_HOURS`) if you want it to repeat daily instead of exiting.
+
+Environment overrides, so no config.json has to be mounted: `EDGE_USER_DATA_DIR`, `EDGE_PATH`,
+`EDGE_KEEP_FOREGROUND`, `EDGE_CLOSE_ON_FINISH`, `EDGE_SESSION_TIMEOUT_MINUTES`.
 
 ## Things to know
 

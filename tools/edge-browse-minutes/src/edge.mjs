@@ -5,10 +5,14 @@ import { chromium } from 'patchright'
 
 import { log, sleep } from './util.mjs'
 
-const KNOWN_PATHS = [
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-]
+export const IS_WINDOWS = process.platform === 'win32'
+
+const KNOWN_PATHS = IS_WINDOWS
+    ? [
+          'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+          'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+      ]
+    : ['/usr/bin/microsoft-edge-stable', '/usr/bin/microsoft-edge', '/opt/microsoft/msedge/msedge']
 
 export function findEdge(configuredPath) {
     if (configuredPath) {
@@ -17,7 +21,7 @@ export function findEdge(configuredPath) {
     }
 
     const found = KNOWN_PATHS.find(existsSync)
-    if (!found) throw new Error('msedge.exe not found - set "edgePath" in config.json')
+    if (!found) throw new Error(`Edge binary not found in [${KNOWN_PATHS.join(', ')}] - set "edgePath" in config.json`)
     return found
 }
 
@@ -52,7 +56,8 @@ export async function launchEdge({ edgePath, userDataDir, remoteDebuggingPort, s
         '--remote-allow-origins=*',
         '--no-first-run',
         '--no-default-browser-check',
-        '--start-maximized',
+        // In a container Edge has no sandbox privileges, and /dev/shm is usually too small
+        ...(IS_WINDOWS ? ['--start-maximized'] : ['--no-sandbox', '--disable-dev-shm-usage', '--window-size=1920,1080']),
         startUrl
     ]
 
