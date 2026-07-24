@@ -56,8 +56,17 @@ export async function launchEdge({ edgePath, userDataDir, remoteDebuggingPort, s
         '--remote-allow-origins=*',
         '--no-first-run',
         '--no-default-browser-check',
-        // In a container Edge has no sandbox privileges, and /dev/shm is usually too small
-        ...(IS_WINDOWS ? ['--start-maximized'] : ['--no-sandbox', '--disable-dev-shm-usage', '--window-size=1920,1080']),
+        // In a container Edge has no sandbox privileges, /dev/shm is usually too small, there is no
+        // GPU, and --password-store=basic keeps the sign-in working without a desktop keyring
+        ...(IS_WINDOWS
+            ? ['--start-maximized']
+            : [
+                  '--no-sandbox',
+                  '--disable-dev-shm-usage',
+                  '--disable-gpu',
+                  '--password-store=basic',
+                  '--window-size=1920,1080'
+              ]),
         startUrl
     ]
 

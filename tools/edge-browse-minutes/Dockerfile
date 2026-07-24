@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gnupg \
         dumb-init \
         procps \
+        dbus \
+        dbus-x11 \
         xvfb \
         x11-utils \
         x11vnc \

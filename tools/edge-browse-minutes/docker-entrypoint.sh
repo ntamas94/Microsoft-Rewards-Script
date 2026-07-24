@@ -21,6 +21,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Edge floods the log with "Failed to connect to the bus" and falls back on an
+# odd credential store without one - and the credential store is what keeps the
+# Microsoft sign-in alive between runs.
+mkdir -p /run/dbus
+if [ ! -S /run/dbus/system_bus_socket ]; then
+    dbus-daemon --system --fork
+fi
+DBUS_SESSION_BUS_ADDRESS="$(dbus-daemon --session --fork --print-address)"
+export DBUS_SESSION_BUS_ADDRESS
+
 Xvfb "${DISPLAY}" -screen 0 "${SCREEN_SIZE}" -nolisten tcp &
 
 for _ in $(seq 1 40); do
@@ -48,11 +58,13 @@ case "${1:-run}" in
         microsoft-edge-stable \
             --no-sandbox \
             --disable-dev-shm-usage \
+            --disable-gpu \
+            --password-store=basic \
             --user-data-dir="${EDGE_USER_DATA_DIR:-/profile}" \
             --no-first-run \
             --no-default-browser-check \
             --window-size=1920,1080 \
-            "https://rewards.bing.com/" &
+            "https://rewards.bing.com/" 2>/dev/null &
         echo "entrypoint: open noVNC, sign in to Edge itself, then stop this container"
         wait
         ;;
