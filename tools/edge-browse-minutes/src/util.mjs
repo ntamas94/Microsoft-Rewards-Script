@@ -8,7 +8,7 @@ const COLORS = {
 }
 
 function stamp() {
-    return new Date().toLocaleTimeString('hu-HU', { hour12: false })
+    return new Date().toTimeString().slice(0, 8)
 }
 
 function line(color, tag, message) {

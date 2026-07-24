@@ -1,65 +1,84 @@
-﻿# edge-browse-minutes
+# edge-browse-minutes
 
-A Microsoft Rewards **"Edge â€“ Minutes: 0/30"** kÃ¡rtyÃ¡t tÃ¶lti fel: elindÃ­tja a **valÃ³di Edge-et** egy dedikÃ¡lt profillal,
-CDP-n keresztÃ¼l vezÃ©rli (bÃ¶ngÃ©szÃ©s, gÃ¶rgetÃ©s), Ã©s kÃ¶zben a Rewards flyout API-bÃ³l olvassa a percszÃ¡mlÃ¡lÃ³t.
+Fills the Microsoft Rewards **"Edge - Minutes: 0/30"** card: it starts the **real Edge** with a dedicated profile,
+drives it over CDP (browsing, scrolling), and meanwhile reads the minute counter from the Rewards flyout API.
 
-A [TheNetsky/Microsoft-Rewards-Script](https://github.com/TheNetsky/Microsoft-Rewards-Script) ezt szÃ¡ndÃ©kosan nem
-csinÃ¡lja: a percet nem egy hÃ­vhatÃ³ Rewards API adja, hanem az Edge belsÅ‘ telemetriÃ¡ja kÃ¼ldi. EzÃ©rt itt nem Playwright
-indÃ­tja a bÃ¶ngÃ©szÅ‘t â€” a Playwright alapÃ©rtelmezett kapcsolÃ³i (`--disable-background-networking`, `--disable-sync`, â€¦)
-pont ezt a telemetriÃ¡t lÅ‘nÃ©k ki. Helyette az Edge sima folyamatkÃ©nt indul `--remote-debugging-port`-tal, Ã©s utÃ³lag
-csatlakozunk rÃ¡.
+The main script deliberately does not do this: the minutes are not granted by a callable Rewards API, they are
+reported by Edge's own internal telemetry. That is why the browser is not launched by Playwright here - Playwright's
+default flags (`--disable-background-networking`, `--disable-sync`, ...) would kill exactly that telemetry. Instead
+Edge is started as an ordinary process with `--remote-debugging-port`, and the tool attaches to it afterwards.
 
-## FeltÃ©telek
+## Requirements
 
-- Windows + telepÃ­tett Microsoft Edge
+- Windows with Microsoft Edge installed
 - Node.js 20+
-- **Be kell jelentkezni magÃ¡ba az Edge-be** (profil ikon, jobb felÃ¼l), nem elÃ©g a bing.com-os belÃ©pÃ©s
+- You must be signed in to **Edge itself** (profile icon, top right), not just to bing.com
 
-## TelepÃ­tÃ©s
+## Install
 
 ```bash
 cd tools/edge-browse-minutes && npm install
 ```
 
-## ElsÅ‘ indÃ­tÃ¡s (egyszeri bejelentkezÃ©s)
+## First run (one-off sign-in)
 
 ```bash
 cd tools/edge-browse-minutes && node index.mjs --status
 ```
 
-KinyÃ­lik az Edge a `edge-profile` mappÃ¡ban lÃ©vÅ‘ Ã¼res profillal. Jelentkezz be **az Edge-be** a Microsoft-fiÃ³kkal,
-majd futtasd Ãºjra a `--status`-t: ha lÃ¡tod a `Edge browsing time: x/30 min` sort, minden Ã¡ll.
+Edge opens with the empty profile stored in `edge-profile`. Sign in to **Edge** with your Microsoft account, then run
+`--status` again: once you see the `Edge browsing time: x/30 min` line, everything is wired up. On Windows the profile
+often signs in automatically from the Windows account, in which case there is nothing to do.
 
-## HasznÃ¡lat
+## Usage
 
 ```bash
 cd tools/edge-browse-minutes && node index.mjs
 ```
 
-AmÃ­g a szÃ¡mlÃ¡lÃ³ el nem Ã©ri a 30-at (vagy le nem jÃ¡r a `sessionTimeoutMinutes`), az eszkÃ¶z Bing-keresÃ©seket Ã©s
-MSN/hÃ­r oldalakat nyitogat, emberszerÅ±en gÃ¶rget, Ã©s percenkÃ©nt lekÃ©rdezi az Ã¡llÃ¡st. Ha kÃ©sz, bezÃ¡rja az Edge-et.
+Until the counter reaches 30 (or `sessionTimeoutMinutes` runs out), the tool opens Bing searches and MSN/news pages,
+scrolls them like a person, and polls the progress every minute. When done, it closes Edge.
 
-KapcsolÃ³k:
+Flags:
 
-| KapcsolÃ³ | Mit csinÃ¡l |
+| Flag | Effect |
 | --- | --- |
-| `--status` | Csak kiÃ­rja az aktuÃ¡lis Ã¡llÃ¡st, nem bÃ¶ngÃ©szik |
-| `--dump` | A nyers Rewards JSON-t fÃ¡jlba menti (ha a szÃ¡mlÃ¡lÃ³ felismerÃ©se elromlik) |
-| `--no-foreground` | Nem rÃ¡ngatja elÅ‘tÃ©rbe az Edge ablakot |
+| `--status` | Print the current progress and exit, no browsing |
+| `--dump` | Write the raw Rewards JSON to a file (for when counter detection breaks) |
+| `--no-foreground` | Do not pull the Edge window to the foreground |
 
-## Fontos tudnivalÃ³k
+## Things to know
 
-- **FÃ³kusz kell.** Az Edge csak az *aktÃ­v* bÃ¶ngÃ©szÃ©st szÃ¡molja, ezÃ©rt az eszkÃ¶z 20 mÃ¡sodpercenkÃ©nt elÅ‘tÃ©rbe hozza az
-  Edge ablakot, Ã©s letiltja az alvÃ¡st. EzÃ©rt Ã©rdemes akkor futtatni, amikor nem a gÃ©pnÃ©l vagy. KikapcsolÃ¡sa:
-  `keepForeground: false` a `config.json`-ban vagy `--no-foreground`.
-- **Nincs garancia.** A percet a Microsoft mÃ©ri szerveroldalon; az eszkÃ¶z valÃ³di Edge-et hasznÃ¡l, de hogy a
-  telemetria mit fogad el, azt a Microsoft bÃ¡rmikor vÃ¡ltoztathatja. EzÃ©rt van benne a `--dump`, hogy a JSON
-  szerkezetÃ©nek vÃ¡ltozÃ¡sakor Ãºjra lehessen hangolni a `src/progress.mjs` felismerÅ‘ logikÃ¡jÃ¡t.
-- **KÃ¼lÃ¶n profil.** A `edge-profile` mappa nem a napi Edge-profilod, Ã­gy nem kavar bele a szemÃ©lyes bÃ¶ngÃ©szÃ©sbe.
-  Ha inkÃ¡bb a sajÃ¡t profilodat hasznÃ¡lnÃ¡d, Ã¡llÃ­tsd Ã¡t a `userDataDir`-t (ilyenkor a sajÃ¡t Edge-edet be kell zÃ¡rni,
-  mielÅ‘tt ez elindul).
+- **Focus matters.** Edge only counts *active* browsing, so the tool brings the Edge window to the foreground every
+  20 seconds and blocks sleep. Run it while you are away from the machine. To turn it off, set `keepForeground: false`
+  in `config.json` or pass `--no-foreground`.
+- **Tracking prevention.** If the profile is on Strict, Rewards may not detect the browsing at all. Keep it on
+  Balanced (`edge://settings/privacy`).
+- **No guarantees.** Microsoft measures the minutes server-side. The tool uses a real Edge, but what the telemetry
+  accepts can change at any time. That is what `--dump` is for: if the payload shape changes, the detection logic in
+  `src/progress.mjs` can be retuned from the dump.
+- **The card is a rotating offer.** If the account has no `partner_edge` block in the payload, the browsing streak is
+  not offered right now, and the tool says so instead of browsing for nothing.
+- **Separate profile.** The `edge-profile` directory is not your daily Edge profile, so it does not interfere with
+  your own browsing. To use your own profile instead, change `userDataDir` (your Edge must then be closed before this
+  starts).
 
-## KonfigurÃ¡ciÃ³
+## Where the counter comes from
 
-Az Ã¶sszes kulcs magyarÃ¡zata a [config.example.json](config.example.json) fÃ¡jlban van kommentkÃ©nt (`"// kulcs"` sorok).
-Az elsÅ‘ futÃ¡skor ebbÅ‘l kÃ©szÃ¼l a `config.json`.
+The daily check-in promotion in `https://www.bing.com/rewards/panelflyout/getuserinfo?channel=BingFlyout` carries one
+attribute block per partner:
+
+```
+partner_edge_titleArg0: "12"   <- minutes browsed today
+partner_edge_titleArg1: "30"   <- daily goal
+partner_edge_currentStep: "1"  <- day within the 7-day streak
+partner_edge_points: "[5,10,20,30,40,80,120]"
+```
+
+The same shape exists for `bing` (searches), `ntp` (MSN new tab), `outlook`, `dset` and `sapphire`, so `--status`
+prints those too.
+
+## Configuration
+
+Every key is documented inline in [config.example.json](config.example.json) (the `"// key"` entries). On the first
+run `config.json` is created from it.
