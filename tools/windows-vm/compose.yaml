@@ -1,0 +1,51 @@
+# A Windows VM whose only job is to earn the Edge browsing streak, which Microsoft credits
+# on Windows and Xbox only. Runs the tool from tools/edge-browse-minutes natively inside.
+#
+#   cp .env.example .env      # set a VM password there, never in this file
+#   docker compose up -d
+#   open http://<host>:8006   # watch the automated Windows install, then sign in to Edge
+#
+# Costs real resources: a CPU core or two, 4GB RAM and ~48GB of disk, permanently. For a
+# task worth 5 points a day. Decide that deliberately.
+#
+# Windows licensing is your responsibility: this pulls official Microsoft media and installs
+# it unactivated. An unactivated Windows runs fine for this, with cosmetic nags.
+
+services:
+    windows:
+        image: dockurr/windows
+        container_name: windows-edge
+        restart: unless-stopped
+
+        environment:
+            VERSION: '11'
+            RAM_SIZE: '4G'
+            CPU_CORES: '2'
+            DISK_SIZE: '48G'
+            USERNAME: 'rewards'
+            PASSWORD: ${WINDOWS_PASSWORD:?set WINDOWS_PASSWORD in .env}
+            LANGUAGE: 'English'
+            REGION: 'hu-HU'
+            KEYBOARD: 'hu-HU'
+
+        devices:
+            - /dev/kvm
+            - /dev/net/tun
+
+        cap_add:
+            - NET_ADMIN
+
+        ports:
+            # Web viewer for the install and the one-off Edge sign-in. Keep it off the
+            # public internet - reach it over an SSH tunnel if the server is remote.
+            - '127.0.0.1:8006:8006'
+            - '127.0.0.1:3389:3389/tcp'
+            - '127.0.0.1:3389:3389/udp'
+
+        volumes:
+            - ${WINDOWS_STORAGE_DIR:-/mnt/hdd/windows-edge/storage}:/storage
+            # Runs once at the end of the unattended install: installs Node, fetches the
+            # tool, registers the daily scheduled task.
+            - ./oem:/oem
+
+        stop_grace_period: 2m
