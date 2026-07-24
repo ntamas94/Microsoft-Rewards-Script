@@ -105,6 +105,12 @@ Environment overrides, so no config.json has to be mounted: `EDGE_USER_DATA_DIR`
 - **No guarantees.** Microsoft measures the minutes server-side. The tool uses a real Edge, but what the telemetry
   accepts can change at any time. That is what `--dump` is for: if the payload shape changes, the detection logic in
   `src/progress.mjs` can be retuned from the dump.
+- **Credit arrives in ~5 minute blocks.** The counter does not tick per minute, so `0/30 (+0)` during the first
+  few polls is normal and says nothing about whether it works. Give a run 15-20 uninterrupted minutes before
+  concluding anything - restarting the container resets the browsing session and starts the block over.
+- **A stale Edge process blocks it.** Widely reported: Edge keeps background processes after its window closes, and
+  the counter then never moves until they are killed. The container avoids this by construction - every run starts a
+  fresh Edge and kills it afterwards.
 - **The card is a rotating offer.** If the account has no `partner_edge` block in the payload, the browsing streak is
   not offered right now, and the tool says so instead of browsing for nothing.
 - **Separate profile.** The `edge-profile` directory is not your daily Edge profile, so it does not interfere with
