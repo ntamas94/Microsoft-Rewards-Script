@@ -57,6 +57,7 @@ export class Login {
         passKeyVideo: '[data-testid="biometricVideo"]',
         passKeyError: '[data-testid="registrationImg"]',
         passwordlessCheck: '[data-testid="deviceShieldCheckmarkVideo"]',
+        numberDisplay: 'div[data-testid="displaySign"]',
         totpInput: 'input[name="otc"]',
         totpInputOld: 'form[name="OneTimeCodeViewForm"]',
         identityBanner: '[data-testid="identityBanner"]',
@@ -354,6 +355,26 @@ export class Login {
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Handling "Get a code" flow')
                 await this.bot.browser.utils.ghostClick(page, this.selectors.primaryButton)
                 await this.waitForIdle(page, 'after primary button click')
+
+                // The state was decided before this click, and the click can land on Authenticator
+                // number matching rather than an email code. The code handler would then block on
+                // stdin waiting for a code nobody can type - fatal for a headless container.
+                const [numberDisplay, deviceApproval] = await Promise.all([
+                    this.checkSelector(page, this.selectors.numberDisplay),
+                    this.checkSelector(page, this.selectors.passwordlessCheck)
+                ])
+
+                if (numberDisplay || deviceApproval) {
+                    this.bot.logger.info(
+                        this.bot.isMobile,
+                        'LOGIN',
+                        'Device approval page detected, switching to the passwordless handler'
+                    )
+                    await this.passwordlessLogin.handle(page)
+                    await this.waitForIdle(page, 'after passwordless auth')
+                    return true
+                }
+
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Initiating code login handler')
                 await this.codeLogin.handle(page)
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Code login handler completed successfully')
