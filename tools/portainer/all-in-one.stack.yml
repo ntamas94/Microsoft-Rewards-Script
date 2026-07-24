@@ -1,0 +1,76 @@
+# Both containers in one stack: the rewards script and the Edge browsing-time streak.
+#
+# From the repo root on the server:
+#   docker compose -f tools/portainer/all-in-one.stack.yml up -d --build
+#
+# In Portainer: Stacks -> Add stack -> Repository, compose path tools/portainer/all-in-one.stack.yml
+#
+# Both are built from this fork rather than pulled: the rewards image needs the passwordless
+# login patch, and edge-browse-minutes has no published image at all.
+#
+# Accounts come from the .env in the repo root (ACCOUNT_1_EMAIL, ACCOUNT_1_PASSWORD or
+# ACCOUNT_1_PASSWORDLESS=true). The two services do not share credentials: the Edge one
+# authenticates through the Edge profile you signed in over noVNC and stores no password.
+
+services:
+    microsoft-rewards-script:
+        build:
+            context: ../..
+        image: microsoft-rewards-script:fork
+        pull_policy: never
+        container_name: microsoft-rewards-script
+        restart: unless-stopped
+
+        env_file:
+            - path: ../../.env
+
+        environment:
+            TZ: 'Europe/Budapest'
+            NODE_ENV: 'production'
+            CRON_SCHEDULE: '0 7 * * *'
+            RUN_ON_START: 'true'
+
+        volumes:
+            - /mnt/hdd/microsoft-rewards-script/config:/usr/src/microsoft-rewards-script/config
+            - /mnt/hdd/microsoft-rewards-script/sessions:/usr/src/microsoft-rewards-script/sessions
+
+        healthcheck:
+            test: ['CMD-SHELL', 'pgrep -x node >/dev/null 2>&1 || pgrep -x cron >/dev/null 2>&1']
+            interval: 60s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
+
+        security_opt:
+            - no-new-privileges:true
+
+    edge-browse-minutes:
+        build:
+            context: ../edge-browse-minutes
+        image: edge-browse-minutes
+        container_name: edge-browse-minutes
+        restart: unless-stopped
+        # Chromium records the hostname in the profile's SingletonLock
+        hostname: edge-browse-minutes
+        # Edge crashes with the default 64MB of shared memory
+        shm_size: 1gb
+
+        environment:
+            - EDGE_USER_DATA_DIR=/profile
+            - EDGE_KEEP_FOREGROUND=true
+            - EDGE_SESSION_TIMEOUT_MINUTES=75
+            # Only browse, no Bing searches: the rewards script does the searching
+            - EDGE_BING_SEARCH_RATIO=0
+            - LOOP_HOURS=24
+            # VNC is only needed for the one-off sign-in
+            - ENABLE_VNC=${ENABLE_VNC:-0}
+
+        volumes:
+            - ${EDGE_PROFILE_DIR:-/mnt/hdd/edge-browse-minutes/profile}:/profile
+
+        ports:
+            # noVNC - do not expose this publicly, it has no password
+            - '127.0.0.1:6080:6080'
+
+        # Runs, then sleeps LOOP_HOURS and runs again
+        command: ['loop']

@@ -1,7 +1,20 @@
 # Portainer deployment
 
-Two separate stacks, because they are two different things: the rewards script runs headless and needs your
-account credentials, while `edge-browse-minutes` needs a real signed-in Edge and no credentials at all.
+Two containers: the rewards script runs headless and needs your account credentials, while
+`edge-browse-minutes` needs a real signed-in Edge and no credentials at all.
+
+## 0. Both at once
+
+[all-in-one.stack.yml](all-in-one.stack.yml) runs both from a single stack, built from this fork - the rewards
+image needs the passwordless login patch, and `edge-browse-minutes` has no published image:
+
+```bash
+docker compose -f tools/portainer/all-in-one.stack.yml up -d --build
+```
+
+It reads accounts from the repo-root `.env`, sets the Edge container to browse without searching (the rewards
+script does the searching), and runs it on a 24 hour loop. The one-off Edge sign-in still has to happen first -
+see section 2. The separate stacks below remain if you would rather deploy them independently.
 
 ## 1. Rewards script (searches, daily set, visual search)
 
