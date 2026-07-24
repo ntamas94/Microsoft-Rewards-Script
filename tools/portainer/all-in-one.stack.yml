@@ -45,6 +45,9 @@ services:
             - no-new-privileges:true
 
     edge-browse-minutes:
+        # Behind a profile: the browsing streak is not credited on Linux, so this must not
+        # start by default. Bring it up deliberately with --profile edge if that ever changes.
+        profiles: ['edge']
         build:
             context: ../edge-browse-minutes
         image: edge-browse-minutes
