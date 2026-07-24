@@ -125,13 +125,21 @@ export function loadAccounts(): Account[] {
             if (!email) break
 
             const password = envStr(`ACCOUNT_${index}_PASSWORD`)
-            if (!password) {
-                throw new Error(`ACCOUNT_${index}_EMAIL is set but ACCOUNT_${index}_PASSWORD is missing`)
+            const passwordless = envBool(`ACCOUNT_${index}_PASSWORDLESS`, false)
+
+            // An empty password is what makes Login take the GET_A_CODE_2 route and hand off to
+            // PasswordlessLogin (Authenticator approval). It has to be opted into: otherwise a
+            // mistyped .env would silently wait for a phone tap instead of reporting a bad value.
+            if (!password && !passwordless) {
+                throw new Error(
+                    `ACCOUNT_${index}_EMAIL is set but ACCOUNT_${index}_PASSWORD is missing. ` +
+                        `Set ACCOUNT_${index}_PASSWORDLESS=true if this account signs in by Authenticator approval.`
+                )
             }
 
             accounts.push({
                 email,
-                password,
+                password: password ?? '',
                 totpSecret: envStr(`ACCOUNT_${index}_TOTP_SECRET`),
                 recoveryEmail: envStr(`ACCOUNT_${index}_RECOVERY_EMAIL`) ?? '',
                 geoLocale: envStr(`ACCOUNT_${index}_GEO_LOCALE`) ?? 'auto',

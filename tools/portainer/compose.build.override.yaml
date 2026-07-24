@@ -1,0 +1,13 @@
+# The repo-root compose.yaml pulls the upstream image, so patches in this fork never reach the
+# container. Layer this override on top to build from the local source instead:
+#
+#   docker compose -f compose.yaml -f tools/portainer/compose.build.override.yaml up -d --build
+#
+# Needed for ACCOUNT_N_PASSWORDLESS, which only exists in this fork.
+
+services:
+    microsoft-rewards-script:
+        build:
+            context: .
+        image: microsoft-rewards-script:fork
+        pull_policy: never

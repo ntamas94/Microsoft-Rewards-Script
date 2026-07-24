@@ -33,6 +33,28 @@ farms searches past the daily cap and is the only setting here that does not res
 If you deploy with the repo-root `compose.yaml` and a `.env` instead of a Portainer stack, the same list is in
 [env.full.example](env.full.example) - append it to your `.env` and recreate the container.
 
+### Accounts without a password
+
+If the Microsoft account signs in by Authenticator approval instead of a password, leave the password empty and
+opt in explicitly:
+
+```bash
+ACCOUNT_1_EMAIL=you@example.com
+ACCOUNT_1_PASSWORD=
+ACCOUNT_1_PASSWORDLESS=true
+```
+
+Upstream rejects a missing password outright; this fork allows it behind that flag, which makes the login flow take
+the code route and wait for you to approve a two-digit number on your phone. The session is then saved to
+`sessions/` and reused, so the approval is needed only when that session expires - and a scheduled run that hits an
+expired session will fail until someone taps the notification.
+
+Because this is a fork-only change, the container has to be built from source rather than pulled:
+
+```bash
+docker compose -f compose.yaml -f tools/portainer/compose.build.override.yaml up -d --build
+```
+
 ## 2. edge-browse-minutes (the Edge 30-minute streak)
 
 This one has to be built, so use **Add stack** -> **Repository** instead of the web editor:
