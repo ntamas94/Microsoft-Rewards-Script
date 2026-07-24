@@ -11,11 +11,10 @@ services:
             - EDGE_SESSION_TIMEOUT_MINUTES=75
             - LOOP_HOURS=24
         volumes:
-            - edge-profile:/profile
+            # Bind mount so the Edge profile lives on the big disk, not in /var/lib/docker.
+            # Override EDGE_PROFILE_DIR in .env (see .env.example).
+            - ${EDGE_PROFILE_DIR:-/mnt/hdd/edge-browse-minutes/profile}:/profile
         ports:
             # noVNC, only needed for the one-off sign-in - do not expose this publicly
             - '127.0.0.1:6080:6080'
         command: ['run']
-
-volumes:
-    edge-profile:

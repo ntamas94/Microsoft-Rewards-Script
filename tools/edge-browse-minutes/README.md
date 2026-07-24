@@ -57,7 +57,14 @@ one-off sign-in.
 streak is also a rotating offer that not every account has. Measure it before relying on it: run `status`, let `run`
 work for ~10 minutes, then run `status` again and check whether the counter moved.
 
-Build and sign in once (the profile is kept in the `edge-profile` volume):
+The Edge profile is a bind mount, so it stays on the host disk you choose and survives rebuilds - it holds the
+signed-in session, so losing it means signing in again. Set the path once:
+
+```bash
+cp .env.example .env   # EDGE_PROFILE_DIR, defaults to /mnt/hdd/edge-browse-minutes/profile
+```
+
+Build and sign in once:
 
 ```bash
 docker compose build
