@@ -72,6 +72,38 @@ clear_stale_locks() {
     done
 }
 
+# Chromium keeps the signed-in account in Preferences and writes it lazily. Killing the
+# container right after signing in loses exactly the thing the sign-in was for, so Edge
+# gets a SIGTERM and time to flush before anything else is torn down.
+shutdown_edge() {
+    local pid="$1"
+
+    kill -0 "${pid}" 2>/dev/null || return 0
+
+    echo "entrypoint: shutting Edge down cleanly, this takes a few seconds"
+    kill -TERM "${pid}" 2>/dev/null || true
+
+    for _ in $(seq 1 40); do
+        kill -0 "${pid}" 2>/dev/null || break
+        sleep 0.5
+    done
+
+    if kill -0 "${pid}" 2>/dev/null; then
+        echo "entrypoint: Edge did not exit in 20s, forcing it" >&2
+        kill -KILL "${pid}" 2>/dev/null || true
+    fi
+}
+
+report_signin_state() {
+    local prefs="$1/Default/Preferences"
+
+    if [ -f "${prefs}" ] && grep -q '"account_info"' "${prefs}" 2>/dev/null; then
+        echo "entrypoint: a signed-in account is stored in the profile - you are done here"
+    else
+        echo "entrypoint: WARNING - no signed-in account in the profile, the sign-in did not persist" >&2
+    fi
+}
+
 clear_stale_locks
 
 case "${1:-run}" in
@@ -112,8 +144,11 @@ case "${1:-run}" in
             echo "entrypoint: Edge window is up on ${DISPLAY}"
         fi
 
-        echo "entrypoint: open noVNC, sign in to Edge itself, then stop this container"
-        wait "${edge_pid}"
+        echo "entrypoint: open noVNC, sign in to Edge itself, then press Ctrl+C here (or close the window)"
+        trap 'shutdown_edge "${edge_pid}"' INT TERM
+        wait "${edge_pid}" || true
+        shutdown_edge "${edge_pid}"
+        report_signin_state "${profile_dir}"
         ;;
     status)
         exec node /app/index.mjs --status

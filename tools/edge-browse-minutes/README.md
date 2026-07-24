@@ -71,8 +71,10 @@ docker compose build
 docker compose run --rm --service-ports edge-browse-minutes signin
 ```
 
-Open `http://localhost:6080/vnc.html`, sign in to Edge with your Microsoft account, then stop the container
-(Ctrl+C). The noVNC port is bound to localhost and has no password - keep it off the public internet, and tunnel
+Open `http://localhost:6080/vnc.html`, sign in to Edge with your Microsoft account, then stop the container with a
+single Ctrl+C and **wait for it to exit on its own**. Chromium writes the signed-in account to the profile lazily,
+so a killed container loses exactly what the sign-in was for. The container asks Edge to shut down cleanly, gives
+it up to 20 seconds, and then reports whether the account actually persisted. The noVNC port is bound to localhost and has no password - keep it off the public internet, and tunnel
 over SSH (`ssh -L 6080:localhost:6080 user@server`) when the machine is remote.
 
 Then:
