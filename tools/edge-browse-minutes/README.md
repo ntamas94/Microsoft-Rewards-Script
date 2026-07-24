@@ -47,6 +47,17 @@ Flags:
 | `--dump` | Write the raw Rewards JSON to a file (for when counter detection breaks) |
 | `--no-foreground` | Do not pull the Edge window to the foreground |
 
+## Docker (Linux) - does not earn the streak
+
+**The Linux container does not work for this task, and cannot be made to.** The browsing streak is credited on
+Windows and Xbox only; Linux, macOS and mobile are not counted, which is consistent with the community reports and
+with our own test - a signed-in Edge in the container browsed for 20 minutes with the window kept active and the
+counter never left `0/30`. Everything below still builds and runs correctly, it simply is not credited, so the
+Windows path above is the only one that earns points. Kept for reference, and in case Microsoft ever widens it.
+
+The workaround people use on non-Windows hosts is a Windows VM or remote access to a Windows machine - at which
+point the tool runs there natively and the container adds nothing.
+
 ## Docker (Linux, unverified)
 
 The image installs `microsoft-edge-stable` and runs it on an Xvfb display with fluxbox (a window manager is
