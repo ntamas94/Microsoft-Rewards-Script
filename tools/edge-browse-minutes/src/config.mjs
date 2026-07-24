@@ -47,8 +47,14 @@ export function loadConfig() {
 
 /** Container-friendly overrides so the image can run without a mounted config.json. */
 function applyEnvOverrides(config) {
-    const { EDGE_USER_DATA_DIR, EDGE_PATH, EDGE_KEEP_FOREGROUND, EDGE_SESSION_TIMEOUT_MINUTES, EDGE_CLOSE_ON_FINISH } =
-        process.env
+    const {
+        EDGE_USER_DATA_DIR,
+        EDGE_PATH,
+        EDGE_KEEP_FOREGROUND,
+        EDGE_SESSION_TIMEOUT_MINUTES,
+        EDGE_CLOSE_ON_FINISH,
+        EDGE_BING_SEARCH_RATIO
+    } = process.env
 
     if (EDGE_USER_DATA_DIR) config.userDataDir = path.resolve(EDGE_USER_DATA_DIR)
     if (EDGE_PATH) config.edgePath = EDGE_PATH
@@ -56,6 +62,13 @@ function applyEnvOverrides(config) {
     if (EDGE_CLOSE_ON_FINISH) config.closeOnFinish = EDGE_CLOSE_ON_FINISH !== 'false'
     if (EDGE_SESSION_TIMEOUT_MINUTES && Number(EDGE_SESSION_TIMEOUT_MINUTES) > 0) {
         config.sessionTimeoutMinutes = Number(EDGE_SESSION_TIMEOUT_MINUTES)
+    }
+
+    // Set to 0 while the main rewards script is searching, so only one browser
+    // searches Bing on the account at a time; browsing time is credited either way.
+    if (EDGE_BING_SEARCH_RATIO !== undefined && EDGE_BING_SEARCH_RATIO !== '') {
+        const ratio = Number(EDGE_BING_SEARCH_RATIO)
+        if (Number.isFinite(ratio) && ratio >= 0 && ratio <= 1) config.bingSearchRatio = ratio
     }
 
     return config
