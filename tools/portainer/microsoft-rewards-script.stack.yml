@@ -1,0 +1,50 @@
+# Portainer -> Stacks -> Add stack -> Web editor, then paste this file.
+#
+# Do NOT put your account credentials in here. Add them in the "Environment variables"
+# box underneath the editor (Add an environment variable), so they stay in Portainer and
+# never end up in git:
+#
+#   ACCOUNT_1_EMAIL      = you@example.com
+#   ACCOUNT_1_PASSWORD   = <your password>
+#
+# For more accounts add ACCOUNT_2_EMAIL / ACCOUNT_2_PASSWORD in Portainer as well, and
+# copy the two matching lines in the environment block below. Numbering must start at 1
+# and stay contiguous - the script stops at the first missing ACCOUNT_N_EMAIL.
+#
+# v4 has no accounts.json; accounts come from these variables only.
+
+services:
+    microsoft-rewards-script:
+        image: ghcr.io/thenetsky/microsoft-rewards-script:4
+        container_name: microsoft-rewards-script
+        restart: unless-stopped
+
+        volumes:
+            - /mnt/hdd/microsoft-rewards-script/config:/usr/src/microsoft-rewards-script/config
+            - /mnt/hdd/microsoft-rewards-script/sessions:/usr/src/microsoft-rewards-script/sessions
+
+        environment:
+            # -- Accounts: values come from the Portainer environment variables --
+            ACCOUNT_1_EMAIL: '${ACCOUNT_1_EMAIL}'
+            ACCOUNT_1_PASSWORD: '${ACCOUNT_1_PASSWORD}'
+
+            # -- Scheduler --
+            TZ: 'Europe/Budapest'
+            NODE_ENV: 'production'
+            CRON_SCHEDULE: '0 7 * * *' # daily at 07:00, see crontab.guru
+            RUN_ON_START: 'true' # also run once when the stack starts
+            SKIP_RANDOM_SLEEP: 'false'
+
+            # -- Workers --
+            # Visual Search is off by default in the shipped config, this turns it on.
+            CONFIG_WORKER_VISUAL_SEARCH: 'true'
+
+        healthcheck:
+            test: ['CMD-SHELL', 'pgrep -x node >/dev/null 2>&1 || pgrep -x cron >/dev/null 2>&1']
+            interval: 60s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
+
+        security_opt:
+            - no-new-privileges:true
