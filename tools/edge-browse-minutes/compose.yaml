@@ -14,6 +14,9 @@ services:
             - EDGE_KEEP_FOREGROUND=true
             - EDGE_SESSION_TIMEOUT_MINUTES=75
             - LOOP_HOURS=24
+            # Set to 0 while the main rewards script is running, so only one browser
+            # searches Bing on the account. Empty keeps the config.json default (0.5).
+            - EDGE_BING_SEARCH_RATIO=${EDGE_BING_SEARCH_RATIO:-}
             # VNC is only needed for the one-off sign-in. Set to 0 afterwards so no VNC
             # server runs at all during normal, unattended runs.
             - ENABLE_VNC=${ENABLE_VNC:-1}
