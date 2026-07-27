@@ -33,14 +33,17 @@ export class VisualSearch extends Workers {
         const streak = this.findStreak()
         this.logStreakState(streak)
 
+        // Deliberately do NOT skip on streak.isCurrentDayCompleted. The streak snapshot can lag a
+        // full timezone behind the actual Visual Search card (card shows Activity 0/1 while the
+        // streak still reports yesterday as complete), which silently skips days. Always attempt;
+        // Microsoft credits the daily search only once, so a redundant attempt is harmless and
+        // performDailySearch() detects the already-registered case and returns 0.
         if (streak?.isCurrentDayCompleted) {
             this.bot.logger.info(
                 this.bot.isMobile,
                 'VISUAL-SEARCH',
-                `Already completed today | visualSearchStreak=${streak.completedDays}/${streak.totalDays}`,
-                'green'
+                `Streak snapshot says completed (${streak.completedDays}/${streak.totalDays}) - verifying against the live card instead of trusting it`
             )
-            return 0
         }
 
         const activation = await this.activate(data)
