@@ -29,9 +29,16 @@ function getDb(sessionPath: string): DatabaseSync {
     if (db) return db
 
     const dir = path.resolve(process.cwd(), sessionPath)
-    fs.mkdirSync(dir, { recursive: true })
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 })
+    try {
+        fs.chmodSync(dir, 0o700)
+    } catch {}
 
-    db = new DatabaseSync(path.join(dir, 'sessions.db'))
+    const dbPath = path.join(dir, 'sessions.db')
+    db = new DatabaseSync(dbPath)
+    try {
+        fs.chmodSync(dbPath, 0o600)
+    } catch {}
 
     db.exec('PRAGMA journal_mode = WAL')
     db.exec('PRAGMA busy_timeout = 5000')
@@ -44,6 +51,13 @@ function getDb(sessionPath: string): DatabaseSync {
             fingerprint   TEXT,
             updated_at    INTEGER NOT NULL,
             PRIMARY KEY (email, platform)
+        )
+    `)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS account_metadata (
+            email           TEXT PRIMARY KEY COLLATE NOCASE,
+            resolved_region TEXT,
+            updated_at      INTEGER NOT NULL
         )
     `)
 
@@ -89,6 +103,16 @@ export function saveStorageState(
         .run(email, platformOf(isMobile), JSON.stringify(storageState), Date.now())
 }
 
+export function clearStorageState(sessionPath: string, email: string, isMobile: boolean): void {
+    getDb(sessionPath)
+        .prepare(
+            `UPDATE sessions
+             SET storage_state = NULL, updated_at = ?
+             WHERE email = ? AND platform = ?`
+        )
+        .run(Date.now(), email, platformOf(isMobile))
+}
+
 export function saveFingerprint(
     sessionPath: string,
     email: string,
@@ -105,9 +129,27 @@ export function saveFingerprint(
         .run(email, platformOf(isMobile), JSON.stringify(fingerprint), Date.now())
 }
 
-// Unused
-export function deleteSession(sessionPath: string, email: string, isMobile: boolean): void {
-    getDb(sessionPath).prepare('DELETE FROM sessions WHERE email = ? AND platform = ?').run(email, platformOf(isMobile))
+export function loadResolvedRegion(sessionPath: string, email: string): string | undefined {
+    const row = getDb(sessionPath)
+        .prepare('SELECT resolved_region FROM account_metadata WHERE email = ?')
+        .get(email) as { resolved_region?: string | null } | undefined
+
+    return row?.resolved_region ?? undefined
+}
+
+export function saveResolvedRegion(sessionPath: string, email: string, region: string): void {
+    if (!/^[A-Z]{2}$/.test(region)) {
+        throw new Error(`Invalid resolved account region: ${region}`)
+    }
+
+    getDb(sessionPath)
+        .prepare(
+            `INSERT INTO account_metadata (email, resolved_region, updated_at)
+             VALUES (?, ?, ?)
+             ON CONFLICT(email)
+             DO UPDATE SET resolved_region = excluded.resolved_region, updated_at = excluded.updated_at`
+        )
+        .run(email, region, Date.now())
 }
 
 export function closeSessionStore(): void {
