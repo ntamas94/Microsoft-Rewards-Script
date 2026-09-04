@@ -30,6 +30,13 @@ Edge opens with the empty profile stored in `edge-profile`. Sign in to **Edge** 
 `--status` again: once you see the `Edge browsing time: x/30 min` line, everything is wired up. On Windows the profile
 often signs in automatically from the Windows account, in which case there is nothing to do.
 
+While the window is open, also set **Bing as the default search engine** in this profile
+(`edge://settings/searchEngines` -> *Address bar and search* -> *Search engine used in the address bar* -> Bing).
+Rewards pays a separate bonus for it, and the address bar searches this tool types (see below) only count towards
+that bonus when the default is Bing. This is a per-profile setting, it does not touch your daily Edge profile. The
+container does not need it: the image ships the same thing as a managed policy
+(`src/edge-policy.json` -> `/etc/opt/edge/policies/managed/bing-default.json`).
+
 ## Usage
 
 ```bash
@@ -127,6 +134,18 @@ Environment overrides, so no config.json has to be mounted: `EDGE_USER_DATA_DIR`
 - **Separate profile.** The `edge-profile` directory is not your daily Edge profile, so it does not interfere with
   your own browsing. To use your own profile instead, change `userDataDir` (your Edge must then be closed before this
   starts).
+- **Address bar searches, not URLs.** The Rewards "Bing as your default search engine" bonus only counts searches
+  that start in the address bar, so the tool types the query into the omnibox (SendKeys on Windows, `xdotool` on the
+  container's X display) instead of navigating straight to `bing.com/search?q=...`. It needs a real, activatable
+  window; on a headless host set `addressBarSearch: false` (or `EDGE_ADDRESS_BAR_SEARCH=false`) and it falls back to
+  direct navigation, which still fills the minutes but not that bonus. A single failed attempt also falls back on
+  its own instead of aborting the run.
+- **The default-search bonus is monthly, not daily.** Per the Rewards page: Bing has to be the default search engine
+  *and* you have to search from the address bar on **14 days within the same calendar month** (`Days 1/14`). Any 14
+  days, they do not have to be consecutive, and one address bar search is enough to mark a day. The bonus (210
+  points) is awarded **at the start of the next calendar month and has to be claimed manually** - it can also take up
+  to 5 days to show up after it is issued. So a run that browses the minutes also ticks that day, but nothing here
+  claims the bonus for you.
 
 ## Where the counter comes from
 
